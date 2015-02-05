@@ -1,0 +1,23 @@
+[Unit]
+Description=Cassandra %i etcd registration
+
+# Requirements
+Requires=etcd.service
+Requires=cassandra@%i.service
+
+# Dependency ordering and binding
+After=etcd.service
+After=cassandra@%i.service
+BindsTo=cassandra@%i.service
+
+[Service]
+
+# Get CoreOS environmental variables
+EnvironmentFile=/etc/environment
+
+# Start
+ExecStart=/usr/bin/etcdctl set /services/cassadra/${COREOS_PUBLIC_IPV4} ${COREOS_PUBLIC_IPV4}
+
+[X-Fleet]
+# Schedule on the same machine as the associated Cassandra database
+X-ConditionMachineOf=cassandra@%i.service

@@ -1,0 +1,38 @@
+[Unit]
+Description=Cassandra service on port %i
+
+# Requirements
+Requires=etcd.service
+Requires=docker.service
+Requires=cassandra-discovery@%i.service
+
+# Dependency ordering
+After=etcd.service
+After=docker.service
+Before=cassandra-discovery@%i.service
+
+[Service]
+# Let processes take awhile to start up (for first run Docker containers)
+TimeoutStartSec=0
+
+# Change killmode from "control-group" to "none" to let Docker remove
+# work correctly.
+KillMode=none
+
+# Get CoreOS environmental variables
+EnvironmentFile=/etc/environment
+
+# Pre-start and Start
+## Directives with "=-" are allowed to fail without consequence
+ExecStartPre=-/usr/bin/docker kill cassandra.%i
+ExecStartPre=-/usr/bin/docker rm cassandra.%i
+ExecStartPre=/usr/bin/docker pull volkodav/cassandra:v4
+ExecStart=/usr/bin/docker run --name cassandra.%i -p ${COREOS_PUBLIC_IPV4}:%i:9200 \
+volkodav/cassandra:v4 cass-dock
+
+# Stop
+ExecStop=/usr/bin/docker stop cassandra.%i
+
+[X-Fleet]
+# Don't schedule on the same machine as other Apache instances
+X-Conflicts=cassandra@*.service
